@@ -23,7 +23,7 @@ impl Simulation
 	#[new]
 	fn new () -> Self
 	{
-		let mut sim = Simulation
+		let sim = Simulation
 		{
 			pipeline : PhysicsPipeline::new(),
 			gravity : vector![0.0, -9.81],
@@ -37,12 +37,6 @@ impl Simulation
 			multiBodyJoints : MultibodyJointSet::new(),
 			ccdSolver : CCDSolver::new(),
 		};
-		let groundCollider = ColliderBuilder::cuboid(100.0, 0.1).build();
-		sim.colliders.insert(groundCollider);
-		let rigidBody = RigidBodyBuilder::dynamic().translation(vector![0.0, 10.0]).build();
-		let collider = ColliderBuilder::cuboid(0.5, 0.5).restitution(0.7).build();
-		let ballBodyHandle = sim.bodies.insert(rigidBody);
-		sim.colliders.insert_with_parent(collider, ballBodyHandle, &mut sim.bodies);
 		sim
 	}
 
@@ -77,6 +71,16 @@ impl Simulation
 		{
 			None
 		}
+	}
+
+	fn SetGravity (&mut self, x : f32, y : f32)
+	{
+		self.gravity = vector![x, y]
+	}
+
+	fn GetGravity (&self) -> [f32; 2]
+	{
+		[self.gravity.x, self.gravity.y]
 	}
 }
 
