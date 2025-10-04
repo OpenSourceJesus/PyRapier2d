@@ -10,7 +10,7 @@ struct Simulation
 	islandManager : IslandManager,
 	broadPhase : BroadPhase,
 	narrowPhase : NarrowPhase,
-	bodies : RigidBodySet,
+	rigidBodies : RigidBodySet,
 	colliders : ColliderSet,
 	impulseJoints : ImpulseJointSet,
 	multiBodyJoints : MultibodyJointSet,
@@ -31,7 +31,7 @@ impl Simulation
 			islandManager : IslandManager::new(),
 			broadPhase : BroadPhase::new(),
 			narrowPhase : NarrowPhase::new(),
-			bodies : RigidBodySet::new(),
+			rigidBodies : RigidBodySet::new(),
 			colliders : ColliderSet::new(),
 			impulseJoints : ImpulseJointSet::new(),
 			multiBodyJoints : MultibodyJointSet::new(),
@@ -48,7 +48,7 @@ impl Simulation
 			&mut self.islandManager,
 			&mut self.broadPhase,
 			&mut self.narrowPhase,
-			&mut self.bodies,
+			&mut self.rigidBodies,
 			&mut self.colliders,
 			&mut self.impulseJoints,
 			&mut self.multiBodyJoints,
@@ -62,7 +62,7 @@ impl Simulation
 	fn GetBodyPosition (&self, handleInt : u64) -> Option<(f32, f32)>
 	{
 		let handle = RigidBodyHandle::from_raw_parts(handleInt as u32, 0);
-		if let Some(body) = self.bodies.get(handle)
+		if let Some(body) = self.rigidBodies.get(handle)
 		{
 			let pos = body.translation();
 			Some((pos.x, pos.y))
@@ -81,6 +81,29 @@ impl Simulation
 	fn GetGravity (&self) -> [f32; 2]
 	{
 		[self.gravity.x, self.gravity.y]
+	}
+
+	fn AddRigidBody (&mut self, enabled : bool, _type : i8, pos : [f32; 2]) -> (u32, u32)
+	{
+		let rigidBodyBuilder;
+		if _type == 0
+		{
+			rigidBodyBuilder = RigidBodyBuilder::dynamic();
+		}
+		else if _type == 1
+		{
+			rigidBodyBuilder = RigidBodyBuilder::fixed();
+		}
+		else if _type == 2
+		{
+			rigidBodyBuilder = RigidBodyBuilder::kinematic_position_based();
+		}
+		else
+		{
+			rigidBodyBuilder = RigidBodyBuilder::kinematic_velocity_based();
+		}
+		rigidBodyBuilder.clone().enabled(enabled).translation(vector![pos[0], pos[1]]);
+		self.rigidBodies.insert(rigidBodyBuilder).into_raw_parts()
 	}
 }
 
