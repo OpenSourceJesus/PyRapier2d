@@ -27,9 +27,9 @@ impl Simulation
 		self.rigidBodies.get_mut(RigidBodyHandle::from_raw_parts(handleInt, 0))
 	}
 
-	fn SetColliderBuilderValues (&self, colliderBuilder : ColliderBuilder, enabled : bool, pos : [f32; 2], collisionGroupMembership : u32, collisionGroupFilter : u32) -> ColliderBuilder
+	fn SetColliderBuilderValues (&self, colliderBuilder : ColliderBuilder, enabled : bool, pos : [f32; 2], collisionGroupMembership : u32, collisionGroupFilter : u32, isSensor : bool, density : f32) -> ColliderBuilder
 	{
-		colliderBuilder.enabled(enabled).translation(vector![pos[0], pos[1]]).collision_groups(InteractionGroups::new(Group::from_bits_truncate(collisionGroupMembership), Group::from_bits_truncate(collisionGroupFilter)))
+		colliderBuilder.enabled(enabled).translation(vector![pos[0], pos[1]]).collision_groups(InteractionGroups::new(Group::from_bits_truncate(collisionGroupMembership), Group::from_bits_truncate(collisionGroupFilter))).sensor(isSensor).density(density)
 	}
 }
 
@@ -164,9 +164,9 @@ impl Simulation
 		self.rigidBodies.insert(rigidBodyBuilder).into_raw_parts().0
 	}
 
-	fn AddBallCollider (&mut self, enabled : bool, pos : [f32; 2], collisionGroupMembership : u32, collisionGroupFilter : u32, radius : f32, attachTo : Option<u32>) -> u32
+	fn AddBallCollider (&mut self, enabled : bool, pos : [f32; 2], collisionGroupMembership : u32, collisionGroupFilter : u32, radius : f32, isSensor : bool, density : f32, attachTo : Option<u32>) -> u32
 	{
-		let colliderBuilder = self.SetColliderBuilderValues(ColliderBuilder::ball(radius), enabled, pos, collisionGroupMembership, collisionGroupFilter);
+		let colliderBuilder = self.SetColliderBuilderValues(ColliderBuilder::ball(radius), enabled, pos, collisionGroupMembership, collisionGroupFilter, isSensor, density);
 		if attachTo == None
 		{
 			self.colliders.insert(colliderBuilder).into_raw_parts().0
@@ -177,10 +177,22 @@ impl Simulation
 		}
 	}
 
-	fn AddHalfspaceCollider (&mut self, enabled : bool, pos : [f32; 2], collisionGroupMembership : u32, collisionGroupFilter : u32, normal : Option<[f32; 2]>, attachTo : Option<u32>) -> u32
+	fn AddHalfspaceCollider (&mut self, enabled : bool, pos : [f32; 2], collisionGroupMembership : u32, collisionGroupFilter : u32, normal : [f32; 2], isSensor : bool, density : f32, attachTo : Option<u32>) -> u32
 	{
-		let _normal = normal.expect("");
-		let colliderBuilder = self.SetColliderBuilderValues(ColliderBuilder::halfspace(Unit::new_normalize(vector![_normal[0], _normal[1]])), enabled, pos, collisionGroupMembership, collisionGroupFilter);
+		let colliderBuilder = self.SetColliderBuilderValues(ColliderBuilder::halfspace(Unit::new_normalize(vector![normal[0], normal[1]])), enabled, pos, collisionGroupMembership, collisionGroupFilter, isSensor, density);
+		if attachTo == None
+		{
+			self.colliders.insert(colliderBuilder).into_raw_parts().0
+		}
+		else
+		{
+			self.colliders.insert_with_parent(colliderBuilder, RigidBodyHandle::from_raw_parts(attachTo.expect(""), 0), &mut self.rigidBodies).into_raw_parts().0
+		}
+	}
+
+	fn AddCuboidCollider (&mut self, enabled : bool, pos : [f32; 2], collisionGroupMembership : u32, collisionGroupFilter : u32, size : [f32; 2], isSensor : bool, density : f32, attachTo : Option<u32>) -> u32
+	{
+		let colliderBuilder = self.SetColliderBuilderValues(ColliderBuilder::cuboid(size[0] / 2.0, size[1] / 2.0), enabled, pos, collisionGroupMembership, collisionGroupFilter, isSensor, density);
 		if attachTo == None
 		{
 			self.colliders.insert(colliderBuilder).into_raw_parts().0
