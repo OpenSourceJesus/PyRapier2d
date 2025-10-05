@@ -84,6 +84,17 @@ impl Simulation
 		[self.gravity.x, self.gravity.y]
 	}
 
+	fn SetLinearVelocity (&mut self, handleInt : u32, vel : [f32; 2], wakeUp : bool)
+	{
+		self.rigidBodies.get_mut(RigidBodyHandle::from_raw_parts(handleInt, 0)).expect("").set_linvel(vector![vel[0], vel[1]], wakeUp)
+	}
+
+	fn GetLinearVelocity (&mut self, handleInt : u32) -> (f32, f32)
+	{
+		let vel = self.rigidBodies.get_mut(RigidBodyHandle::from_raw_parts(handleInt, 0)).expect("").linvel();
+		(vel[0], vel[1])
+	}
+
 	fn AddRigidBody (&mut self, enabled : bool, _type : i8, pos : [f32; 2], rot : f32) -> u32
 	{
 		let rigidBodyBuilder;
@@ -116,13 +127,13 @@ impl Simulation
 		}
 		else
 		{
-			self.colliders.insert_with_parent(colliderBuilder, RigidBodyHandle::from_raw_parts(attachTo.expect("REASON"), 0), &mut self.rigidBodies).into_raw_parts().0
+			self.colliders.insert_with_parent(colliderBuilder, RigidBodyHandle::from_raw_parts(attachTo.expect(""), 0), &mut self.rigidBodies).into_raw_parts().0
 		}
 	}
 
 	fn AddHalfspaceCollider (&mut self, enabled : bool, pos : [f32; 2], normal : Option<[f32; 2]>, attachTo : Option<u32>) -> u32
 	{
-		let _normal = normal.expect("REASON");
+		let _normal = normal.expect("");
 		let colliderBuilder = ColliderBuilder::halfspace(Unit::new_normalize(vector![_normal[0], _normal[1]])).enabled(enabled).translation(vector![pos[0], pos[1]]);
 		if attachTo == None
 		{
@@ -130,7 +141,7 @@ impl Simulation
 		}
 		else
 		{
-			self.colliders.insert_with_parent(colliderBuilder, RigidBodyHandle::from_raw_parts(attachTo.expect("REASON"), 0), &mut self.rigidBodies).into_raw_parts().0
+			self.colliders.insert_with_parent(colliderBuilder, RigidBodyHandle::from_raw_parts(attachTo.expect(""), 0), &mut self.rigidBodies).into_raw_parts().0
 		}
 	}
 }
