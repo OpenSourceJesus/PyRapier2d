@@ -115,7 +115,7 @@ impl Simulation
 	}
 
 	#[pyo3(name = "AddRigidBody")]
-	fn AddRigidBody (&mut self, enabled : bool, _type : i8, pos : [f32; 2], rot : f32) -> u32
+	fn AddRigidBody (&mut self, enabled : bool, _type : i8, pos : [f32; 2], rot : f32,  gravityScale : f32, dominance : i8, canRot : bool, linearDrag : f32, angDrag : f32) -> u32
 	{
 		let mut rigidBodyBuilder = match _type
 		{
@@ -124,7 +124,11 @@ impl Simulation
 			2 => RigidBodyBuilder::kinematic_position_based(),
 			_ => RigidBodyBuilder::kinematic_velocity_based(),
 		};
-		rigidBodyBuilder.clone().enabled(enabled).translation(vector![pos[0], pos[1]]).rotation(rot);
+		rigidBodyBuilder = rigidBodyBuilder.enabled(enabled).translation(vector![pos[0], pos[1]]).rotation(rot).gravity_scale(gravityScale).dominance_group(dominance).linear_damping(linearDrag).angular_damping(angDrag);
+		if !canRot
+		{
+			rigidBodyBuilder = rigidBodyBuilder.lock_translations();
+		}
 		self.rigidBodies.insert(rigidBodyBuilder).into_raw_parts().0
 	}
 
