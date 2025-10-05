@@ -1,5 +1,6 @@
 use pyo3::prelude::*;
 use rapier2d::prelude::*;
+use nalgebra::Unit;
 
 #[pyclass]
 struct Simulation
@@ -59,9 +60,9 @@ impl Simulation
 		);
 	}
 
-	fn GetBodyPosition (&self, handleInt : u64) -> Option<(f32, f32)>
+	fn GetRigidBodyPosition (&self, handleInt : u32) -> Option<(f32, f32)>
 	{
-		let handle = RigidBodyHandle::from_raw_parts(handleInt as u32, 0);
+		let handle = RigidBodyHandle::from_raw_parts(handleInt, 0);
 		if let Some(body) = self.rigidBodies.get(handle)
 		{
 			let pos = body.translation();
@@ -83,7 +84,7 @@ impl Simulation
 		[self.gravity.x, self.gravity.y]
 	}
 
-	fn AddRigidBody (&mut self, enabled : bool, _type : i8, pos : [f32; 2]) -> (u32, u32)
+	fn AddRigidBody (&mut self, enabled : bool, _type : i8, pos : [f32; 2]) -> u32
 	{
 		let rigidBodyBuilder;
 		if _type == 0
@@ -103,12 +104,39 @@ impl Simulation
 			rigidBodyBuilder = RigidBodyBuilder::kinematic_velocity_based();
 		}
 		rigidBodyBuilder.clone().enabled(enabled).translation(vector![pos[0], pos[1]]);
-		self.rigidBodies.insert(rigidBodyBuilder).into_raw_parts()
+		self.rigidBodies.insert(rigidBodyBuilder).into_raw_parts().0
+	}
+
+	fn AddBallCollider (&mut self, enabled : bool, pos : [f32; 2], radius : f32, attachTo : Option<u32>) -> u32
+	{
+		let colliderBuilder = ColliderBuilder::ball(radius).enabled(enabled).translation(vector![pos[0], pos[1]]);
+		if attachTo == None
+		{
+			self.colliders.insert(colliderBuilder).into_raw_parts().0
+		}
+		else
+		{
+			self.colliders.insert_with_parent(colliderBuilder, RigidBodyHandle::from_raw_parts(attachTo.expect("REASON"), 0), &mut self.rigidBodies).into_raw_parts().0
+		}
+	}
+
+	fn AddHalfspaceCollider (&mut self, enabled : bool, pos : [f32; 2], normal : Option<[f32; 2]>, attachTo : Option<u32>) -> u32
+	{
+		let _normal = normal.expect("REASON");
+		let colliderBuilder = ColliderBuilder::halfspace(Unit::new_normalize(vector![_normal[0], _normal[1]])).enabled(enabled).translation(vector![pos[0], pos[1]]);
+		if attachTo == None
+		{
+			self.colliders.insert(colliderBuilder).into_raw_parts().0
+		}
+		else
+		{
+			self.colliders.insert_with_parent(colliderBuilder, RigidBodyHandle::from_raw_parts(attachTo.expect("REASON"), 0), &mut self.rigidBodies).into_raw_parts().0
+		}
 	}
 }
 
 #[pymodule]
-fn PyRapier2d (_py: Python, m: &PyModule) -> PyResult<()>
+fn PyRapier2d (_py : Python, m : &PyModule) -> PyResult<()>
 {
 	m.add_class::<Simulation>()?;
 	Ok(())
