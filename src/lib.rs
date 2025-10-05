@@ -84,7 +84,7 @@ impl Simulation
 		[self.gravity.x, self.gravity.y]
 	}
 
-	fn AddRigidBody (&mut self, enabled : bool, _type : i8, pos : [f32; 2]) -> u32
+	fn AddRigidBody (&mut self, enabled : bool, _type : i8, pos : [f32; 2], rot : f32) -> u32
 	{
 		let rigidBodyBuilder;
 		if _type == 0
@@ -103,7 +103,7 @@ impl Simulation
 		{
 			rigidBodyBuilder = RigidBodyBuilder::kinematic_velocity_based();
 		}
-		rigidBodyBuilder.clone().enabled(enabled).translation(vector![pos[0], pos[1]]);
+		rigidBodyBuilder.clone().enabled(enabled).translation(vector![pos[0], pos[1]]).rotation(rot);
 		self.rigidBodies.insert(rigidBodyBuilder).into_raw_parts().0
 	}
 
