@@ -203,6 +203,40 @@ impl Simulation
 		}
 	}
 
+	fn AddRoundCuboidCollider (&mut self, enabled : bool, pos : [f32; 2], collisionGroupMembership : u32, collisionGroupFilter : u32, size : [f32; 2], borderRadius : f32, isSensor : bool, density : f32, attachTo : Option<u32>) -> u32
+	{
+		let colliderBuilder = self.SetColliderBuilderValues(ColliderBuilder::round_cuboid(size[0] / 2.0, size[1] / 2.0, borderRadius), enabled, pos, collisionGroupMembership, collisionGroupFilter, isSensor, density);
+		if attachTo == None
+		{
+			self.colliders.insert(colliderBuilder).into_raw_parts().0
+		}
+		else
+		{
+			self.colliders.insert_with_parent(colliderBuilder, RigidBodyHandle::from_raw_parts(attachTo.expect(""), 0), &mut self.rigidBodies).into_raw_parts().0
+		}
+	}
+
+	fn AddCapsuleCollider (&mut self, enabled : bool, pos : [f32; 2], collisionGroupMembership : u32, collisionGroupFilter : u32, height : f32, radius : f32, isVertical : bool, isSensor : bool, density : f32, attachTo : Option<u32>) -> u32
+	{
+		let colliderBuilder;
+		if isVertical
+		{
+			colliderBuilder = self.SetColliderBuilderValues(ColliderBuilder::capsule_y(height / 2.0, radius), enabled, pos, collisionGroupMembership, collisionGroupFilter, isSensor, density);
+		}
+		else
+		{
+			colliderBuilder = self.SetColliderBuilderValues(ColliderBuilder::capsule_x(height / 2.0, radius), enabled, pos, collisionGroupMembership, collisionGroupFilter, isSensor, density);
+		}
+		if attachTo == None
+		{
+			self.colliders.insert(colliderBuilder).into_raw_parts().0
+		}
+		else
+		{
+			self.colliders.insert_with_parent(colliderBuilder, RigidBodyHandle::from_raw_parts(attachTo.expect(""), 0), &mut self.rigidBodies).into_raw_parts().0
+		}
+	}
+
 	fn AddFixedJoint (&mut self, rigidBody1HandleInt : u32, rigidBody2HandleInt : u32, anchorPos1 : [f32; 2], anchorPos2 : [f32; 2], anchorRot1 : f32, anchorRot2 : f32, wakeUp : bool) -> u32
 	{
 		let fixedJointBuilder = FixedJointBuilder::new().local_anchor1(point![anchorPos1[0], anchorPos1[1]]).local_anchor2(point![anchorPos2[0], anchorPos2[1]]).local_frame1(Isometry2::new(vector![anchorPos1[0], anchorPos1[1]], anchorRot1)).local_frame2(Isometry2::new(vector![anchorPos2[0], anchorPos2[1]], anchorRot2));
