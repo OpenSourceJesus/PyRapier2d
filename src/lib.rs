@@ -192,6 +192,12 @@ impl Simulation
 		let fixedJointBuilder = FixedJointBuilder::new().local_anchor1(point![anchorPos1[0], anchorPos1[1]]).local_anchor2(point![anchorPos2[0], anchorPos2[1]]).local_frame1(Isometry2::new(vector![anchorPos1[0], anchorPos1[1]], anchorRot1)).local_frame2(Isometry2::new(vector![anchorPos2[0], anchorPos2[1]], anchorRot2));
 		self.impulseJoints.insert(RigidBodyHandle::from_raw_parts(rigidBody1HandleInt, 0), RigidBodyHandle::from_raw_parts(rigidBody2HandleInt, 0), fixedJointBuilder, wakeUp).into_raw_parts().0
 	}
+
+	fn AddSpringJoint (&mut self, rigidBody1HandleInt : u32, rigidBody2HandleInt : u32, anchorPos1 : [f32; 2], anchorPos2 : [f32; 2], restLen : f32, stiffness : f32, damping : f32, wakeUp : bool) -> u32
+	{
+		let fixedJointBuilder = SpringJointBuilder::new(restLen, stiffness, damping).local_anchor1(point![anchorPos1[0], anchorPos1[1]]).local_anchor2(point![anchorPos2[0], anchorPos2[1]]);
+		self.impulseJoints.insert(RigidBodyHandle::from_raw_parts(rigidBody1HandleInt, 0), RigidBodyHandle::from_raw_parts(rigidBody2HandleInt, 0), fixedJointBuilder, wakeUp).into_raw_parts().0
+	}
 }
 
 #[pymodule]
