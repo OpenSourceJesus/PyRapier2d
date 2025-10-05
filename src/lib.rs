@@ -26,6 +26,11 @@ impl Simulation
 	{
 		self.rigidBodies.get_mut(RigidBodyHandle::from_raw_parts(handleInt, 0))
 	}
+
+	fn SetColliderBuilderValues (&self, colliderBuilder : ColliderBuilder, enabled : bool, pos : [f32; 2], collisionGroupMembership : u32, collisionGroupFilter : u32) -> ColliderBuilder
+	{
+		colliderBuilder.enabled(enabled).translation(vector![pos[0], pos[1]]).collision_groups(InteractionGroups::new(Group::from_bits_truncate(collisionGroupMembership), Group::from_bits_truncate(collisionGroupFilter)))
+	}
 }
 
 #[pymethods]
@@ -142,7 +147,6 @@ impl Simulation
 		}
 	}
 
-	#[pyo3(name = "AddRigidBody")]
 	fn AddRigidBody (&mut self, enabled : bool, _type : i8, pos : [f32; 2], rot : f32,  gravityScale : f32, dominance : i8, canRot : bool, linearDrag : f32, angDrag : f32, canSleep : bool, continuousCollideDetect : bool) -> u32
 	{
 		let mut rigidBodyBuilder = match _type
@@ -160,9 +164,9 @@ impl Simulation
 		self.rigidBodies.insert(rigidBodyBuilder).into_raw_parts().0
 	}
 
-	fn AddBallCollider (&mut self, enabled : bool, pos : [f32; 2], radius : f32, attachTo : Option<u32>) -> u32
+	fn AddBallCollider (&mut self, enabled : bool, pos : [f32; 2], collisionGroupMembership : u32, collisionGroupFilter : u32, radius : f32, attachTo : Option<u32>) -> u32
 	{
-		let colliderBuilder = ColliderBuilder::ball(radius).enabled(enabled).translation(vector![pos[0], pos[1]]);
+		let colliderBuilder = self.SetColliderBuilderValues(ColliderBuilder::ball(radius), enabled, pos, collisionGroupMembership, collisionGroupFilter);
 		if attachTo == None
 		{
 			self.colliders.insert(colliderBuilder).into_raw_parts().0
@@ -173,10 +177,10 @@ impl Simulation
 		}
 	}
 
-	fn AddHalfspaceCollider (&mut self, enabled : bool, pos : [f32; 2], normal : Option<[f32; 2]>, attachTo : Option<u32>) -> u32
+	fn AddHalfspaceCollider (&mut self, enabled : bool, pos : [f32; 2], collisionGroupMembership : u32, collisionGroupFilter : u32, normal : Option<[f32; 2]>, attachTo : Option<u32>) -> u32
 	{
 		let _normal = normal.expect("");
-		let colliderBuilder = ColliderBuilder::halfspace(Unit::new_normalize(vector![_normal[0], _normal[1]])).enabled(enabled).translation(vector![pos[0], pos[1]]);
+		let colliderBuilder = self.SetColliderBuilderValues(ColliderBuilder::halfspace(Unit::new_normalize(vector![_normal[0], _normal[1]])), enabled, pos, collisionGroupMembership, collisionGroupFilter);
 		if attachTo == None
 		{
 			self.colliders.insert(colliderBuilder).into_raw_parts().0
@@ -195,8 +199,26 @@ impl Simulation
 
 	fn AddSpringJoint (&mut self, rigidBody1HandleInt : u32, rigidBody2HandleInt : u32, anchorPos1 : [f32; 2], anchorPos2 : [f32; 2], restLen : f32, stiffness : f32, damping : f32, wakeUp : bool) -> u32
 	{
-		let fixedJointBuilder = SpringJointBuilder::new(restLen, stiffness, damping).local_anchor1(point![anchorPos1[0], anchorPos1[1]]).local_anchor2(point![anchorPos2[0], anchorPos2[1]]);
-		self.impulseJoints.insert(RigidBodyHandle::from_raw_parts(rigidBody1HandleInt, 0), RigidBodyHandle::from_raw_parts(rigidBody2HandleInt, 0), fixedJointBuilder, wakeUp).into_raw_parts().0
+		let springJointBuilder = SpringJointBuilder::new(restLen, stiffness, damping).local_anchor1(point![anchorPos1[0], anchorPos1[1]]).local_anchor2(point![anchorPos2[0], anchorPos2[1]]);
+		self.impulseJoints.insert(RigidBodyHandle::from_raw_parts(rigidBody1HandleInt, 0), RigidBodyHandle::from_raw_parts(rigidBody2HandleInt, 0), springJointBuilder, wakeUp).into_raw_parts().0
+	}
+
+	fn AddRevoluteJoint (&mut self, rigidBody1HandleInt : u32, rigidBody2HandleInt : u32, anchorPos1 : [f32; 2], anchorPos2 : [f32; 2], wakeUp : bool) -> u32
+	{
+		let revoluteJointBuilder = RevoluteJointBuilder::new().local_anchor1(point![anchorPos1[0], anchorPos1[1]]).local_anchor2(point![anchorPos2[0], anchorPos2[1]]);
+		self.impulseJoints.insert(RigidBodyHandle::from_raw_parts(rigidBody1HandleInt, 0), RigidBodyHandle::from_raw_parts(rigidBody2HandleInt, 0), revoluteJointBuilder, wakeUp).into_raw_parts().0
+	}
+
+	fn AddPrismaticJoint (&mut self, rigidBody1HandleInt : u32, rigidBody2HandleInt : u32, anchorPos1 : [f32; 2], anchorPos2 : [f32; 2], axis : [f32; 2], wakeUp : bool) -> u32
+	{
+		let prismaticJointBuilder = PrismaticJointBuilder::new(Unit::new_normalize(vector![axis[0], axis[1]])).local_anchor1(point![anchorPos1[0], anchorPos1[1]]).local_anchor2(point![anchorPos2[0], anchorPos2[1]]);
+		self.impulseJoints.insert(RigidBodyHandle::from_raw_parts(rigidBody1HandleInt, 0), RigidBodyHandle::from_raw_parts(rigidBody2HandleInt, 0), prismaticJointBuilder, wakeUp).into_raw_parts().0
+	}
+
+	fn AddRopeJoint (&mut self, rigidBody1HandleInt : u32, rigidBody2HandleInt : u32, anchorPos1 : [f32; 2], anchorPos2 : [f32; 2], len : f32, wakeUp : bool) -> u32
+	{
+		let ropeJointBuilder = RopeJointBuilder::new(len).local_anchor1(point![anchorPos1[0], anchorPos1[1]]).local_anchor2(point![anchorPos2[0], anchorPos2[1]]);
+		self.impulseJoints.insert(RigidBodyHandle::from_raw_parts(rigidBody1HandleInt, 0), RigidBodyHandle::from_raw_parts(rigidBody2HandleInt, 0), ropeJointBuilder, wakeUp).into_raw_parts().0
 	}
 }
 
