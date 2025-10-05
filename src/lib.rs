@@ -1,6 +1,8 @@
 use pyo3::prelude::*;
 use rapier2d::prelude::*;
 use nalgebra::Unit;
+use nalgebra::Isometry2;
+use nalgebra::Rotation2;
 
 #[pyclass]
 struct Simulation
@@ -68,20 +70,6 @@ impl Simulation
 		);
 	}
 
-	fn GetRigidBodyPosition (&self, handleInt : u32) -> Option<(f32, f32)>
-	{
-		let handle = RigidBodyHandle::from_raw_parts(handleInt, 0);
-		if let Some(body) = self.rigidBodies.get(handle)
-		{
-			let pos = body.translation();
-			Some((pos.x, pos.y))
-		}
-		else
-		{
-			None
-		}
-	}
-
 	fn SetGravity (&mut self, x : f32, y : f32)
 	{
 		self.gravity = vector![x, y]
@@ -94,28 +82,68 @@ impl Simulation
 
 	fn SetPosition (&mut self, handleInt : u32, pos : [f32; 2], wakeUp : bool)
 	{
-		self.GetRigidBody(handleInt).expect("").set_position(vector![pos[0], pos[1]].into(), wakeUp)
+		if let Some(rigidBody) = self.GetRigidBody(handleInt)
+		{
+			rigidBody.set_position(vector![pos[0], pos[1]].into(), wakeUp)
+		}
 	}
 
-	fn GetPosition (&mut self, handleInt : u32) -> (f32, f32)
+	fn GetPosition (&mut self, handleInt : u32) -> Option<(f32, f32)>
 	{
-		let pos = self.GetRigidBody(handleInt).expect("").position().translation;
-		(pos.x, pos.y)
+		if let Some(rigidBody) = self.GetRigidBody(handleInt)
+		{
+			let pos = rigidBody.position().translation;
+			Some((pos.x, pos.y))
+		}
+		else
+		{
+			None
+		}
+	}
+
+	fn SetRotation (&mut self, handleInt : u32, rot : f32, wakeUp : bool)
+	{
+		if let Some(rigidBody) = self.GetRigidBody(handleInt)
+		{
+			rigidBody.set_rotation(Rotation2::new(rot.to_radians()).into(), wakeUp)
+		}
+	}
+
+	fn GetRotation (&mut self, handleInt : u32) -> Option<f32>
+	{
+		if let Some(rigidBody) = self.GetRigidBody(handleInt)
+		{
+			Some(rigidBody.rotation().angle().to_degrees())
+		}
+		else
+		{
+			None
+		}
 	}
 
 	fn SetLinearVelocity (&mut self, handleInt : u32, vel : [f32; 2], wakeUp : bool)
 	{
-		self.GetRigidBody(handleInt).expect("").set_linvel(vector![vel[0], vel[1]], wakeUp)
+		if let Some(rigidBody) = self.GetRigidBody(handleInt)
+		{
+			rigidBody.set_linvel(vector![vel[0], vel[1]], wakeUp)
+		}
 	}
 
-	fn GetLinearVelocity (&mut self, handleInt : u32) -> (f32, f32)
+	fn GetLinearVelocity (&mut self, handleInt : u32) -> Option<(f32, f32)>
 	{
-		let vel = self.GetRigidBody(handleInt).expect("").linvel();
-		(vel[0], vel[1])
+		if let Some(rigidBody) = self.GetRigidBody(handleInt)
+		{
+			let vel = rigidBody.linvel();
+			Some((vel[0], vel[1]))
+		}
+		else
+		{
+			None
+		}
 	}
 
 	#[pyo3(name = "AddRigidBody")]
-	fn AddRigidBody (&mut self, enabled : bool, _type : i8, pos : [f32; 2], rot : f32,  gravityScale : f32, dominance : i8, canRot : bool, linearDrag : f32, angDrag : f32) -> u32
+	fn AddRigidBody (&mut self, enabled : bool, _type : i8, pos : [f32; 2], rot : f32,  gravityScale : f32, dominance : i8, canRot : bool, linearDrag : f32, angDrag : f32, canSleep : bool, continuousCollideDetect : bool) -> u32
 	{
 		let mut rigidBodyBuilder = match _type
 		{
@@ -124,7 +152,7 @@ impl Simulation
 			2 => RigidBodyBuilder::kinematic_position_based(),
 			_ => RigidBodyBuilder::kinematic_velocity_based(),
 		};
-		rigidBodyBuilder = rigidBodyBuilder.enabled(enabled).translation(vector![pos[0], pos[1]]).rotation(rot).gravity_scale(gravityScale).dominance_group(dominance).linear_damping(linearDrag).angular_damping(angDrag);
+		rigidBodyBuilder = rigidBodyBuilder.enabled(enabled).translation(vector![pos[0], pos[1]]).rotation(rot).gravity_scale(gravityScale).dominance_group(dominance).linear_damping(linearDrag).angular_damping(angDrag).can_sleep(canSleep).ccd_enabled(continuousCollideDetect);
 		if !canRot
 		{
 			rigidBodyBuilder = rigidBodyBuilder.lock_translations();
@@ -157,6 +185,12 @@ impl Simulation
 		{
 			self.colliders.insert_with_parent(colliderBuilder, RigidBodyHandle::from_raw_parts(attachTo.expect(""), 0), &mut self.rigidBodies).into_raw_parts().0
 		}
+	}
+
+	fn AddFixedJoint (&mut self, rigidBody1HandleInt : u32, rigidBody2HandleInt : u32, anchorPos1 : [f32; 2], anchorPos2 : [f32; 2], anchorRot1 : f32, anchorRot2 : f32, wakeUp : bool) -> u32
+	{
+		let fixedJointBuilder = FixedJointBuilder::new().local_anchor1(point![anchorPos1[0], anchorPos1[1]]).local_anchor2(point![anchorPos2[0], anchorPos2[1]]).local_frame1(Isometry2::new(vector![anchorPos1[0], anchorPos1[1]], anchorRot1)).local_frame2(Isometry2::new(vector![anchorPos2[0], anchorPos2[1]], anchorRot2));
+		self.impulseJoints.insert(RigidBodyHandle::from_raw_parts(rigidBody1HandleInt, 0), RigidBodyHandle::from_raw_parts(rigidBody2HandleInt, 0), fixedJointBuilder, wakeUp).into_raw_parts().0
 	}
 }
 
