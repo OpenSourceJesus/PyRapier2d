@@ -18,6 +18,14 @@ struct Simulation
 	ccdSolver : CCDSolver,
 }
 
+impl Simulation
+{
+	fn GetRigidBody (&mut self, handleInt : u32) -> Option<&mut RigidBody>
+	{
+		self.rigidBodies.get_mut(RigidBodyHandle::from_raw_parts(handleInt, 0))
+	}
+}
+
 #[pymethods]
 impl Simulation
 {
@@ -84,36 +92,38 @@ impl Simulation
 		[self.gravity.x, self.gravity.y]
 	}
 
+	fn SetPosition (&mut self, handleInt : u32, pos : [f32; 2], wakeUp : bool)
+	{
+		self.GetRigidBody(handleInt).expect("").set_position(vector![pos[0], pos[1]].into(), wakeUp)
+	}
+
+	fn GetPosition (&mut self, handleInt : u32) -> (f32, f32)
+	{
+		let pos = self.GetRigidBody(handleInt).expect("").position().translation;
+		(pos.x, pos.y)
+	}
+
 	fn SetLinearVelocity (&mut self, handleInt : u32, vel : [f32; 2], wakeUp : bool)
 	{
-		self.rigidBodies.get_mut(RigidBodyHandle::from_raw_parts(handleInt, 0)).expect("").set_linvel(vector![vel[0], vel[1]], wakeUp)
+		self.GetRigidBody(handleInt).expect("").set_linvel(vector![vel[0], vel[1]], wakeUp)
 	}
 
 	fn GetLinearVelocity (&mut self, handleInt : u32) -> (f32, f32)
 	{
-		let vel = self.rigidBodies.get_mut(RigidBodyHandle::from_raw_parts(handleInt, 0)).expect("").linvel();
+		let vel = self.GetRigidBody(handleInt).expect("").linvel();
 		(vel[0], vel[1])
 	}
 
+	#[pyo3(name = "AddRigidBody")]
 	fn AddRigidBody (&mut self, enabled : bool, _type : i8, pos : [f32; 2], rot : f32) -> u32
 	{
-		let rigidBodyBuilder;
-		if _type == 0
+		let mut rigidBodyBuilder = match _type
 		{
-			rigidBodyBuilder = RigidBodyBuilder::dynamic();
-		}
-		else if _type == 1
-		{
-			rigidBodyBuilder = RigidBodyBuilder::fixed();
-		}
-		else if _type == 2
-		{
-			rigidBodyBuilder = RigidBodyBuilder::kinematic_position_based();
-		}
-		else
-		{
-			rigidBodyBuilder = RigidBodyBuilder::kinematic_velocity_based();
-		}
+			0 => RigidBodyBuilder::dynamic(),
+			1 => RigidBodyBuilder::fixed(),
+			2 => RigidBodyBuilder::kinematic_position_based(),
+			_ => RigidBodyBuilder::kinematic_velocity_based(),
+		};
 		rigidBodyBuilder.clone().enabled(enabled).translation(vector![pos[0], pos[1]]).rotation(rot);
 		self.rigidBodies.insert(rigidBodyBuilder).into_raw_parts().0
 	}
