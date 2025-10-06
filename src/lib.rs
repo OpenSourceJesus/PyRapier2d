@@ -269,6 +269,12 @@ impl Simulation
 		self.AddCollider(colliderBuilder, attachTo)
 	}
 
+	fn AddHeightfieldCollider (&mut self, enabled : bool, pos : [f32; 2], rot : f32, collisionGroupMembership : u32, collisionGroupFilter : u32, heights: Vec<f32>, scale: [f32; 2], isSensor : bool, density : f32, attachTo : Option<u32>) -> u32
+	{
+		let colliderBuilder = self.SetColliderBuilderValues(ColliderBuilder::heightfield(DVector::from_vec(heights), scale.into()), enabled, pos, rot, collisionGroupMembership, collisionGroupFilter, isSensor, density);
+		self.AddCollider(colliderBuilder, attachTo)
+	}
+
 	fn AddFixedJoint (&mut self, rigidBody1HandleInt : u32, rigidBody2HandleInt : u32, anchorPos1 : [f32; 2], anchorPos2 : [f32; 2], anchorRot1 : f32, anchorRot2 : f32, wakeUp : bool) -> u32
 	{
 		let fixedJointBuilder = FixedJointBuilder::new().local_frame1(Isometry2::new(vector![anchorPos1[0], anchorPos1[1]], anchorRot1)).local_frame2(Isometry2::new(vector![anchorPos2[0], anchorPos2[1]], anchorRot2));
