@@ -9,9 +9,9 @@ struct Simulation
 {
 	pipeline : PhysicsPipeline,
 	gravity : Vector<f32>,
-	integrationParameters : IntegrationParameters,
+	integrationParams : IntegrationParameters,
 	islandManager : IslandManager,
-	broadPhase : BroadPhase,
+	broadPhase : BroadPhaseBvh,
 	narrowPhase : NarrowPhase,
 	rigidBodies : RigidBodySet,
 	colliders : ColliderSet,
@@ -55,9 +55,9 @@ impl Simulation
 		{
 			pipeline : PhysicsPipeline::new(),
 			gravity : vector![0.0, -9.81],
-			integrationParameters : IntegrationParameters::default(),
+			integrationParams : IntegrationParameters::default(),
 			islandManager : IslandManager::new(),
-			broadPhase : BroadPhase::new(),
+			broadPhase : BroadPhaseBvh::new(),
 			narrowPhase : NarrowPhase::new(),
 			rigidBodies : RigidBodySet::new(),
 			colliders : ColliderSet::new(),
@@ -72,7 +72,7 @@ impl Simulation
 	{
 		self.pipeline.step(
 			&self.gravity,
-			&self.integrationParameters,
+			&self.integrationParams,
 			&mut self.islandManager,
 			&mut self.broadPhase,
 			&mut self.narrowPhase,
@@ -81,10 +81,19 @@ impl Simulation
 			&mut self.impulseJoints,
 			&mut self.multiBodyJoints,
 			&mut self.ccdSolver,
-			None,
 			&(),
 			&(),
 		);
+	}
+
+	fn SetLengthUnit (&mut self, len : f32)
+	{
+		self.integrationParams.length_unit = len
+	}
+
+	fn GetLengthUnit (&self) -> f32
+	{
+		self.integrationParams.length_unit
 	}
 
 	fn SetGravity (&mut self, x : f32, y : f32)
@@ -232,17 +241,17 @@ impl Simulation
 		self.AddCollider(colliderBuilder, attachTo)
 	}
 
-	fn AddPolylineCollider (&mut self, enabled : bool, pos : [f32; 2], rot : f32, collisionGroupMembership : u32, collisionGroupFilter : u32, points : Vec<[f32; 2]>, isSensor : bool, density : f32, mut indices : Option<Vec<[u32; 2]>>, attachTo : Option<u32>) -> u32
+	fn AddPolylineCollider (&mut self, enabled : bool, pos : [f32; 2], rot : f32, collisionGroupMembership : u32, collisionGroupFilter : u32, points : Vec<[f32; 2]>, isSensor : bool, density : f32, indices : Option<Vec<[u32; 2]>>, attachTo : Option<u32>) -> u32
 	{
 		let _points : Vec<Point<f32>> = points.iter().map(|point| point![point[0], point[1]]).collect();
 		let colliderBuilder = self.SetColliderBuilderValues(ColliderBuilder::polyline(_points, indices), enabled, pos, rot, collisionGroupMembership, collisionGroupFilter, isSensor, density);
 		self.AddCollider(colliderBuilder, attachTo)
 	}
 
-	fn AddTrimeshCollider (&mut self, enabled : bool, pos : [f32; 2], rot : f32, collisionGroupMembership : u32, collisionGroupFilter : u32, points : Vec<[f32; 2]>, isSensor : bool, density : f32, mut indices : Vec<[u32; 3]>, attachTo : Option<u32>) -> u32
+	fn AddTrimeshCollider (&mut self, enabled : bool, pos : [f32; 2], rot : f32, collisionGroupMembership : u32, collisionGroupFilter : u32, points : Vec<[f32; 2]>, isSensor : bool, density : f32, indices : Vec<[u32; 3]>, attachTo : Option<u32>) -> u32
 	{
 		let _points : Vec<Point<f32>> = points.iter().map(|point| point![point[0], point[1]]).collect();
-		let colliderBuilder = self.SetColliderBuilderValues(ColliderBuilder::trimesh(_points, indices), enabled, pos, rot, collisionGroupMembership, collisionGroupFilter, isSensor, density);
+		let colliderBuilder = self.SetColliderBuilderValues(ColliderBuilder::trimesh(_points, indices).expect(""), enabled, pos, rot, collisionGroupMembership, collisionGroupFilter, isSensor, density);
 		self.AddCollider(colliderBuilder, attachTo)
 	}
 

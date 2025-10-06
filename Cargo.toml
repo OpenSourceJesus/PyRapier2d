@@ -11,7 +11,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 # The core Rapier2D physics engine
-rapier2d = "0.18.0" 
+rapier2d = "0.30.0" 
 
 # The PyO3 bridge
 pyo3 = { version = "0.20.0", features = ["extension-module"] }
