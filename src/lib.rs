@@ -114,12 +114,12 @@ impl Simulation
 		}
 	}
 
-	fn GetPosition (&mut self, handleInt : u32) -> Option<(f32, f32)>
+	fn GetPosition (&mut self, handleInt : u32) -> Option<[f32; 2]>
 	{
 		if let Some(rigidBody) = self.GetRigidBody(handleInt)
 		{
 			let pos = rigidBody.position().translation;
-			Some((pos.x, pos.y))
+			Some([pos.x, pos.y])
 		}
 		else
 		{
@@ -155,12 +155,12 @@ impl Simulation
 		}
 	}
 
-	fn GetLinearVelocity (&mut self, handleInt : u32) -> Option<(f32, f32)>
+	fn GetLinearVelocity (&mut self, handleInt : u32) -> Option<[f32; 2]>
 	{
 		if let Some(rigidBody) = self.GetRigidBody(handleInt)
 		{
 			let vel = rigidBody.linvel();
-			Some((vel[0], vel[1]))
+			Some([vel[0], vel[1]])
 		}
 		else
 		{
