@@ -232,7 +232,7 @@ impl Simulation
 		self.AddCollider(colliderBuilder, attachTo)
 	}
 
-	fn AddPolylineCollider (&mut self, enabled : bool, pos : [f32; 2], rot : f32, collisionGroupMembership : u32, collisionGroupFilter : u32, points : Vec<[f32; 2]>, isSensor : bool, density : f32, attachTo : Option<u32>, mut indices : Option<Vec<[u32; 2]>>) -> u32
+	fn AddPolylineCollider (&mut self, enabled : bool, pos : [f32; 2], rot : f32, collisionGroupMembership : u32, collisionGroupFilter : u32, points : Vec<[f32; 2]>, isSensor : bool, density : f32, mut indices : Option<Vec<[u32; 2]>>, attachTo : Option<u32>) -> u32
 	{
 		let _points : Vec<Point<f32>> = points.iter().map(|point| point![point[0], point[1]]).collect();
 		let colliderBuilder = self.SetColliderBuilderValues(ColliderBuilder::polyline(_points, indices), enabled, pos, rot, collisionGroupMembership, collisionGroupFilter, isSensor, density);
