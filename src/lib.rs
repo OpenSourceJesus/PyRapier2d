@@ -31,6 +31,18 @@ impl Simulation
 	{
 		colliderBuilder.enabled(enabled).translation(vector![pos[0], pos[1]]).collision_groups(InteractionGroups::new(Group::from_bits_truncate(collisionGroupMembership), Group::from_bits_truncate(collisionGroupFilter))).sensor(isSensor).density(density)
 	}
+	
+	fn AddCollider (&mut self, colliderBuilder : ColliderBuilder, attachTo : Option<u32>) -> u32
+	{
+		if attachTo == None
+		{
+			self.colliders.insert(colliderBuilder).into_raw_parts().0
+		}
+		else
+		{
+			self.colliders.insert_with_parent(colliderBuilder, RigidBodyHandle::from_raw_parts(attachTo.expect(""), 0), &mut self.rigidBodies).into_raw_parts().0
+		}
+	}
 }
 
 #[pymethods]
@@ -167,53 +179,25 @@ impl Simulation
 	fn AddBallCollider (&mut self, enabled : bool, pos : [f32; 2], collisionGroupMembership : u32, collisionGroupFilter : u32, radius : f32, isSensor : bool, density : f32, attachTo : Option<u32>) -> u32
 	{
 		let colliderBuilder = self.SetColliderBuilderValues(ColliderBuilder::ball(radius), enabled, pos, collisionGroupMembership, collisionGroupFilter, isSensor, density);
-		if attachTo == None
-		{
-			self.colliders.insert(colliderBuilder).into_raw_parts().0
-		}
-		else
-		{
-			self.colliders.insert_with_parent(colliderBuilder, RigidBodyHandle::from_raw_parts(attachTo.expect(""), 0), &mut self.rigidBodies).into_raw_parts().0
-		}
+		self.AddCollider(colliderBuilder, attachTo)
 	}
 
 	fn AddHalfspaceCollider (&mut self, enabled : bool, pos : [f32; 2], collisionGroupMembership : u32, collisionGroupFilter : u32, normal : [f32; 2], isSensor : bool, density : f32, attachTo : Option<u32>) -> u32
 	{
 		let colliderBuilder = self.SetColliderBuilderValues(ColliderBuilder::halfspace(Unit::new_normalize(vector![normal[0], normal[1]])), enabled, pos, collisionGroupMembership, collisionGroupFilter, isSensor, density);
-		if attachTo == None
-		{
-			self.colliders.insert(colliderBuilder).into_raw_parts().0
-		}
-		else
-		{
-			self.colliders.insert_with_parent(colliderBuilder, RigidBodyHandle::from_raw_parts(attachTo.expect(""), 0), &mut self.rigidBodies).into_raw_parts().0
-		}
+		self.AddCollider(colliderBuilder, attachTo)
 	}
 
 	fn AddCuboidCollider (&mut self, enabled : bool, pos : [f32; 2], collisionGroupMembership : u32, collisionGroupFilter : u32, size : [f32; 2], isSensor : bool, density : f32, attachTo : Option<u32>) -> u32
 	{
 		let colliderBuilder = self.SetColliderBuilderValues(ColliderBuilder::cuboid(size[0] / 2.0, size[1] / 2.0), enabled, pos, collisionGroupMembership, collisionGroupFilter, isSensor, density);
-		if attachTo == None
-		{
-			self.colliders.insert(colliderBuilder).into_raw_parts().0
-		}
-		else
-		{
-			self.colliders.insert_with_parent(colliderBuilder, RigidBodyHandle::from_raw_parts(attachTo.expect(""), 0), &mut self.rigidBodies).into_raw_parts().0
-		}
+		self.AddCollider(colliderBuilder, attachTo)
 	}
 
 	fn AddRoundCuboidCollider (&mut self, enabled : bool, pos : [f32; 2], collisionGroupMembership : u32, collisionGroupFilter : u32, size : [f32; 2], borderRadius : f32, isSensor : bool, density : f32, attachTo : Option<u32>) -> u32
 	{
 		let colliderBuilder = self.SetColliderBuilderValues(ColliderBuilder::round_cuboid(size[0] / 2.0, size[1] / 2.0, borderRadius), enabled, pos, collisionGroupMembership, collisionGroupFilter, isSensor, density);
-		if attachTo == None
-		{
-			self.colliders.insert(colliderBuilder).into_raw_parts().0
-		}
-		else
-		{
-			self.colliders.insert_with_parent(colliderBuilder, RigidBodyHandle::from_raw_parts(attachTo.expect(""), 0), &mut self.rigidBodies).into_raw_parts().0
-		}
+		self.AddCollider(colliderBuilder, attachTo)
 	}
 
 	fn AddCapsuleCollider (&mut self, enabled : bool, pos : [f32; 2], collisionGroupMembership : u32, collisionGroupFilter : u32, height : f32, radius : f32, isVertical : bool, isSensor : bool, density : f32, attachTo : Option<u32>) -> u32
@@ -227,14 +211,13 @@ impl Simulation
 		{
 			colliderBuilder = self.SetColliderBuilderValues(ColliderBuilder::capsule_x(height / 2.0, radius), enabled, pos, collisionGroupMembership, collisionGroupFilter, isSensor, density);
 		}
-		if attachTo == None
-		{
-			self.colliders.insert(colliderBuilder).into_raw_parts().0
-		}
-		else
-		{
-			self.colliders.insert_with_parent(colliderBuilder, RigidBodyHandle::from_raw_parts(attachTo.expect(""), 0), &mut self.rigidBodies).into_raw_parts().0
-		}
+		self.AddCollider(colliderBuilder, attachTo)
+	}
+
+	fn AddSegmentCollider (&mut self, enabled : bool, pos : [f32; 2], collisionGroupMembership : u32, collisionGroupFilter : u32, point1 : [f32; 2], point2 : [f32; 2], isSensor : bool, density : f32, attachTo : Option<u32>) -> u32
+	{
+		let colliderBuilder = self.SetColliderBuilderValues(ColliderBuilder::segment(point![point1[0], point1[1]], point![point2[0], point2[1]]), enabled, pos, collisionGroupMembership, collisionGroupFilter, isSensor, density);
+		self.AddCollider(colliderBuilder, attachTo)
 	}
 
 	fn AddFixedJoint (&mut self, rigidBody1HandleInt : u32, rigidBody2HandleInt : u32, anchorPos1 : [f32; 2], anchorPos2 : [f32; 2], anchorRot1 : f32, anchorRot2 : f32, wakeUp : bool) -> u32
