@@ -220,6 +220,18 @@ impl Simulation
 		self.AddCollider(colliderBuilder, attachTo)
 	}
 
+	fn AddTriangleCollider (&mut self, enabled : bool, pos : [f32; 2], collisionGroupMembership : u32, collisionGroupFilter : u32, point1 : [f32; 2], point2 : [f32; 2], point3 : [f32; 2], isSensor : bool, density : f32, attachTo : Option<u32>) -> u32
+	{
+		let colliderBuilder = self.SetColliderBuilderValues(ColliderBuilder::triangle(point![point1[0], point1[1]], point![point2[0], point2[1]], point![point3[0], point3[1]]), enabled, pos, collisionGroupMembership, collisionGroupFilter, isSensor, density);
+		self.AddCollider(colliderBuilder, attachTo)
+	}
+
+	fn AddRoundTriangleCollider (&mut self, enabled : bool, pos : [f32; 2], collisionGroupMembership : u32, collisionGroupFilter : u32, point1 : [f32; 2], point2 : [f32; 2], point3 : [f32; 2], borderRadius : f32, isSensor : bool, density : f32, attachTo : Option<u32>) -> u32
+	{
+		let colliderBuilder = self.SetColliderBuilderValues(ColliderBuilder::round_triangle(point![point1[0], point1[1]], point![point2[0], point2[1]], point![point3[0], point3[1]], borderRadius), enabled, pos, collisionGroupMembership, collisionGroupFilter, isSensor, density);
+		self.AddCollider(colliderBuilder, attachTo)
+	}
+
 	fn AddFixedJoint (&mut self, rigidBody1HandleInt : u32, rigidBody2HandleInt : u32, anchorPos1 : [f32; 2], anchorPos2 : [f32; 2], anchorRot1 : f32, anchorRot2 : f32, wakeUp : bool) -> u32
 	{
 		let fixedJointBuilder = FixedJointBuilder::new().local_anchor1(point![anchorPos1[0], anchorPos1[1]]).local_anchor2(point![anchorPos2[0], anchorPos2[1]]).local_frame1(Isometry2::new(vector![anchorPos1[0], anchorPos1[1]], anchorRot1)).local_frame2(Isometry2::new(vector![anchorPos2[0], anchorPos2[1]], anchorRot2));
