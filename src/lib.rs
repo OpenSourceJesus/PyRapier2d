@@ -304,6 +304,41 @@ impl Simulation
 		let ropeJointBuilder = RopeJointBuilder::new(len).local_anchor1(point![anchorPos1[0], anchorPos1[1]]).local_anchor2(point![anchorPos2[0], anchorPos2[1]]);
 		self.impulseJoints.insert(RigidBodyHandle::from_raw_parts(rigidBody1HandleInt, 0), RigidBodyHandle::from_raw_parts(rigidBody2HandleInt, 0), ropeJointBuilder, wakeUp).into_raw_parts().0
 	}
+
+	fn CopyRigidBody (&mut self, rigidBodyHandleInt : u32, pos : [f32; 2], rot : f32, wakeUp : bool) -> Option<u32>
+	{
+		if let Some(rigidBody) = self.rigidBodies.get(RigidBodyHandle::from_raw_parts(rigidBodyHandleInt, 0))
+		{
+			let mut newRigidBody = rigidBody.clone();
+			newRigidBody.set_position(Isometry2::new(vector![pos[0], pos[1]], rot), wakeUp);
+			Some(self.rigidBodies.insert(newRigidBody).into_raw_parts().0)
+		}
+		else
+		{
+			None
+		}
+	}
+
+	fn CopyCollider (&mut self, colliderHandleInt : u32, pos : [f32; 2], rot : f32, attachTo : Option<u32>) -> Option<u32>
+	{
+		if let Some(collider) = self.colliders.get(ColliderHandle::from_raw_parts(colliderHandleInt, 0))
+		{
+			let mut newCollider = collider.clone();
+			newCollider.set_position(Isometry2::new(vector![pos[0], pos[1]], rot));
+			if attachTo == None
+			{
+				Some(self.colliders.insert(newCollider).into_raw_parts().0)
+			}
+			else
+			{
+				Some(self.colliders.insert_with_parent(newCollider, RigidBodyHandle::from_raw_parts(attachTo.expect(""), 0), &mut self.rigidBodies).into_raw_parts().0)
+			}
+		}
+		else
+		{
+			None
+		}
+	}
 }
 
 #[pymodule]
