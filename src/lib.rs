@@ -339,6 +339,16 @@ impl Simulation
 			None
 		}
 	}
+
+	fn GetRigidBodies (&self) -> Vec<u32>
+	{
+		self.rigidBodies.iter().map(|(handle, _)| handle.into_raw_parts().0).collect()
+	}
+
+	fn GetColliders (&self) -> Vec<u32>
+	{
+		self.colliders.iter().map(|(handle, _)| handle.into_raw_parts().0).collect()
+	}
 }
 
 #[pymodule]
