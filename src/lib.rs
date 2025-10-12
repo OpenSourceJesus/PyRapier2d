@@ -277,7 +277,7 @@ impl Simulation
 
 	fn AddFixedJoint (&mut self, rigidBody1HandleInt : u32, rigidBody2HandleInt : u32, anchorPos1 : [f32; 2], anchorPos2 : [f32; 2], anchorRot1 : f32, anchorRot2 : f32, wakeUp : bool) -> u32
 	{
-		let fixedJointBuilder = FixedJointBuilder::new().local_frame1(Isometry2::new(vector![anchorPos1[0], anchorPos1[1]], anchorRot1)).local_frame2(Isometry2::new(vector![anchorPos2[0], anchorPos2[1]], anchorRot2));
+		let fixedJointBuilder = FixedJointBuilder::new().local_frame1(Isometry2::new(vector![anchorPos1[0], anchorPos1[1]], anchorRot1.to_radians())).local_frame2(Isometry2::new(vector![anchorPos2[0], anchorPos2[1]], anchorRot2.to_radians()));
 		self.impulseJoints.insert(RigidBodyHandle::from_raw_parts(rigidBody1HandleInt, 0), RigidBodyHandle::from_raw_parts(rigidBody2HandleInt, 0), fixedJointBuilder, wakeUp).into_raw_parts().0
 	}
 
@@ -348,6 +348,38 @@ impl Simulation
 	fn GetColliders (&self) -> Vec<u32>
 	{
 		self.colliders.iter().map(|(handle, _)| handle.into_raw_parts().0).collect()
+	}
+
+	fn OverlapShape (&self, pos : [f32; 2], rot : f32, colliderHandleInt : u32, collisionGroupFilter : u32) -> Vec<u32>
+	{
+		let shape = match self.colliders.get(ColliderHandle::from_raw_parts(colliderHandleInt, 0)) {
+			Some(collider) => collider.shape(),
+			None => return Vec::new(),
+		};
+		let orientation = Isometry2::new(vector![pos[0], pos[1]], rot.to_radians());
+		let filter = QueryFilter {
+			groups: Some(InteractionGroups::new(
+				Group::ALL,
+				Group::from_bits_truncate(collisionGroupFilter),
+			)),
+			..Default::default()
+		};
+		let queryPipeline = self.broadPhase.as_query_pipeline(
+			self.narrowPhase.query_dispatcher(),
+			&self.rigidBodies,
+			&self.colliders,
+			filter,
+		);
+		let hitColliders = queryPipeline.intersect_shape(
+			orientation,
+			shape,
+		);
+		let mut output = Vec::new();
+		for hitCollider in hitColliders
+		{
+			output.push(hitCollider.0.into_raw_parts().0)
+		}
+		output
 	}
 }
 
