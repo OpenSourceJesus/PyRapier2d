@@ -27,6 +27,11 @@ impl Simulation
 		self.rigidBodies.get_mut(RigidBodyHandle::from_raw_parts(handleInt, 0))
 	}
 
+	fn GetCollider (&mut self, handleInt : u32) -> Option<&mut Collider>
+	{
+		self.colliders.get_mut(ColliderHandle::from_raw_parts(handleInt, 0))
+	}
+
 	fn SetColliderBuilderValues (&self, colliderBuilder : ColliderBuilder, enabled : bool, pos : [f32; 2], rot : f32, collisionGroupMembership : u32, collisionGroupFilter : u32, isSensor : bool, density : f32) -> ColliderBuilder
 	{
 		colliderBuilder.enabled(enabled).translation(vector![pos[0], pos[1]]).rotation(rot.to_radians()).collision_groups(InteractionGroups::new(Group::from_bits_truncate(collisionGroupMembership), Group::from_bits_truncate(collisionGroupFilter))).sensor(isSensor).density(density)
@@ -106,7 +111,7 @@ impl Simulation
 		[self.gravity.x, self.gravity.y]
 	}
 
-	fn SetPosition (&mut self, handleInt : u32, pos : [f32; 2], wakeUp : bool)
+	fn SetRigidBodyPosition (&mut self, handleInt : u32, pos : [f32; 2], wakeUp : bool)
 	{
 		if let Some(rigidBody) = self.GetRigidBody(handleInt)
 		{
@@ -114,7 +119,7 @@ impl Simulation
 		}
 	}
 
-	fn GetPosition (&mut self, handleInt : u32) -> Option<[f32; 2]>
+	fn GetRigidBodyPosition (&mut self, handleInt : u32) -> Option<[f32; 2]>
 	{
 		if let Some(rigidBody) = self.GetRigidBody(handleInt)
 		{
@@ -127,7 +132,28 @@ impl Simulation
 		}
 	}
 
-	fn SetRotation (&mut self, handleInt : u32, rot : f32, wakeUp : bool)
+	fn SetColliderPosition (&mut self, handleInt : u32, pos : [f32; 2])
+	{
+		if let Some(collider) = self.GetCollider(handleInt)
+		{
+			collider.set_position(vector![pos[0], pos[1]].into())
+		}
+	}
+
+	fn GetColliderPosition (&mut self, handleInt : u32) -> Option<[f32; 2]>
+	{
+		if let Some(collider) = self.GetCollider(handleInt)
+		{
+			let pos = collider.position().translation;
+			Some([pos.x, pos.y])
+		}
+		else
+		{
+			None
+		}
+	}
+
+	fn SetRigidBodyRotation (&mut self, handleInt : u32, rot : f32, wakeUp : bool)
 	{
 		if let Some(rigidBody) = self.GetRigidBody(handleInt)
 		{
@@ -135,11 +161,31 @@ impl Simulation
 		}
 	}
 
-	fn GetRotation (&mut self, handleInt : u32) -> Option<f32>
+	fn GetRigidBodyRotation (&mut self, handleInt : u32) -> Option<f32>
 	{
 		if let Some(rigidBody) = self.GetRigidBody(handleInt)
 		{
 			Some(rigidBody.rotation().angle().to_degrees())
+		}
+		else
+		{
+			None
+		}
+	}
+
+	fn SetColliderRotation (&mut self, handleInt : u32, rot : f32)
+	{
+		if let Some(collider) = self.GetCollider(handleInt)
+		{
+			collider.set_rotation(Rotation2::new(rot.to_radians()).into())
+		}
+	}
+
+	fn GetColliderRotation (&mut self, handleInt : u32) -> Option<f32>
+	{
+		if let Some(collider) = self.GetCollider(handleInt)
+		{
+			Some(collider.rotation().angle().to_degrees())
 		}
 		else
 		{
