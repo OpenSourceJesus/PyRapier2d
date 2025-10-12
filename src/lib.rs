@@ -310,7 +310,7 @@ impl Simulation
 		if let Some(rigidBody) = self.rigidBodies.get(RigidBodyHandle::from_raw_parts(rigidBodyHandleInt, 0))
 		{
 			let mut newRigidBody = rigidBody.clone();
-			newRigidBody.set_position(Isometry2::new(vector![pos[0], pos[1]], rot), wakeUp);
+			newRigidBody.set_position(Isometry2::new(vector![pos[0], pos[1]], rot.to_radians()), wakeUp);
 			Some(self.rigidBodies.insert(newRigidBody).into_raw_parts().0)
 		}
 		else
@@ -324,7 +324,7 @@ impl Simulation
 		if let Some(collider) = self.colliders.get(ColliderHandle::from_raw_parts(colliderHandleInt, 0))
 		{
 			let mut newCollider = collider.clone();
-			newCollider.set_position(Isometry2::new(vector![pos[0], pos[1]], rot));
+			newCollider.set_position(Isometry2::new(vector![pos[0], pos[1]], rot.to_radians()));
 			if attachTo == None
 			{
 				Some(self.colliders.insert(newCollider).into_raw_parts().0)
