@@ -350,17 +350,46 @@ impl Simulation
 		self.colliders.iter().map(|(handle, _)| handle.into_raw_parts().0).collect()
 	}
 
-	fn OverlapShape (&self, pos : [f32; 2], rot : f32, colliderHandleInt : u32, collisionGroupFilter : u32) -> Vec<u32>
+	fn OverlapCollider (&self, colliderHandleInt : u32, pos : Option<[f32; 2]>, rot : Option<f32>, collisionGroupFilter : Option<u32>) -> Vec<u32>
 	{
-		let shape = match self.colliders.get(ColliderHandle::from_raw_parts(colliderHandleInt, 0)) {
+		let collider = self.colliders.get(ColliderHandle::from_raw_parts(colliderHandleInt, 0));
+		let _pos : [f32; 2];
+		if let Some(pos_) = pos
+		{
+			_pos = pos_;
+		}
+		else
+		{
+			let translation = collider.expect("").translation();
+			_pos = [translation.x, translation.y];
+		}
+		let _rot : f32;
+		if let Some(rot_) = rot
+		{
+			_rot = rot_;
+		}
+		else
+		{
+			_rot = collider.expect("").rotation().angle().to_degrees();
+		}
+		let _collisionGroupFilter : u32;
+		if let Some(collisionGroupFilter_) = collisionGroupFilter
+		{
+			_collisionGroupFilter = collisionGroupFilter_;
+		}
+		else
+		{
+			_collisionGroupFilter = 65535;
+		}
+		let shape = match collider {
 			Some(collider) => collider.shape(),
 			None => return Vec::new(),
 		};
-		let orientation = Isometry2::new(vector![pos[0], pos[1]], rot.to_radians());
+		let orientation = Isometry2::new(vector![_pos[0], _pos[1]], _rot.to_radians());
 		let filter = QueryFilter {
 			groups: Some(InteractionGroups::new(
 				Group::ALL,
-				Group::from_bits_truncate(collisionGroupFilter),
+				Group::from_bits_truncate(_collisionGroupFilter),
 			)),
 			..Default::default()
 		};
