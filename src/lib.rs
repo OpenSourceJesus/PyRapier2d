@@ -305,13 +305,23 @@ impl Simulation
 		self.impulseJoints.insert(RigidBodyHandle::from_raw_parts(rigidBody1HandleInt, 0), RigidBodyHandle::from_raw_parts(rigidBody2HandleInt, 0), ropeJointBuilder, wakeUp).into_raw_parts().0
 	}
 
-	fn CopyRigidBody (&mut self, rigidBodyHandleInt : u32, pos : [f32; 2], rot : f32, wakeUp : bool) -> Option<u32>
+	fn CopyRigidBody (&mut self, rigidBodyHandleInt: u32, pos: [f32; 2], rot: f32, wakeUp: bool) -> Option<u32>
 	{
 		if let Some(rigidBody) = self.rigidBodies.get(RigidBodyHandle::from_raw_parts(rigidBodyHandleInt, 0))
 		{
+			let copyColliders : Vec<Collider> = rigidBody
+				.colliders()
+				.iter()
+				.filter_map(|handle| self.colliders.get(*handle).cloned())
+				.collect();
 			let mut newRigidBody = rigidBody.clone();
 			newRigidBody.set_position(Isometry2::new(vector![pos[0], pos[1]], rot.to_radians()), wakeUp);
-			Some(self.rigidBodies.insert(newRigidBody).into_raw_parts().0)
+			let new_handle = self.rigidBodies.insert(newRigidBody);
+			for collider in copyColliders
+			{
+				self.colliders.insert_with_parent(collider, new_handle, &mut self.rigidBodies);
+			}
+			Some(new_handle.into_raw_parts().0)
 		}
 		else
 		{
@@ -379,7 +389,7 @@ impl Simulation
 		}
 		else
 		{
-			_collisionGroupFilter = 65535;
+			_collisionGroupFilter = Group::ALL.into();
 		}
 		let shape = match collider {
 			Some(collider) => collider.shape(),
@@ -406,7 +416,22 @@ impl Simulation
 		let mut output = Vec::new();
 		for hitCollider in hitColliders
 		{
-			output.push(hitCollider.0.into_raw_parts().0)
+			let hitColliderHandleInt = hitCollider.0.into_raw_parts().0;
+			if hitColliderHandleInt != colliderHandleInt
+			{
+				output.push(hitColliderHandleInt)
+			}
+		}
+		output
+	}
+
+	fn GetRigidBodyColliders (&self, rigidBodyHandleInt : u32) -> Vec<u32>
+	{
+		let rigidBody = self.rigidBodies.get(RigidBodyHandle::from_raw_parts(rigidBodyHandleInt, 0));
+		let mut output = Vec::new();
+		for collider in rigidBody.expect("").colliders()
+		{
+			output.push(collider.into_raw_parts().0)
 		}
 		output
 	}
