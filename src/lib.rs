@@ -226,7 +226,7 @@ impl Simulation
 		rigidBodyBuilder = rigidBodyBuilder.enabled(enabled).translation(vector![pos[0], pos[1]]).rotation(rot.to_radians()).gravity_scale(gravityScale).dominance_group(dominance).linear_damping(linearDrag).angular_damping(angDrag).can_sleep(canSleep).ccd_enabled(continuousCollideDetect);
 		if !canRot
 		{
-			rigidBodyBuilder = rigidBodyBuilder.lock_translations();
+			rigidBodyBuilder = rigidBodyBuilder.lock_rotations();
 		}
 		self.rigidBodies.insert(rigidBodyBuilder).into_raw_parts().0
 	}
