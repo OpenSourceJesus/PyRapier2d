@@ -6,6 +6,7 @@ version = 4
 name = "PyRapier2d"
 version = "0.1.0"
 dependencies = [
+ "parry2d",
  "pyo3",
  "rapier2d",
 ]

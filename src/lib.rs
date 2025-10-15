@@ -3,6 +3,7 @@ use rapier2d::prelude::*;
 use nalgebra::Unit;
 use nalgebra::Isometry2;
 use nalgebra::Rotation2;
+use parry2d::query::ShapeCastOptions;
 
 #[pyclass]
 struct Simulation
@@ -451,6 +452,17 @@ impl Simulation
 		self.colliders.iter().map(|(handle, _)| handle.into_raw_parts().0).collect()
 	}
 
+	fn GetRigidBodyColliders (&self, rigidBodyHandleInt : u32) -> Vec<u32>
+	{
+		let rigidBody = self.rigidBodies.get(RigidBodyHandle::from_raw_parts(rigidBodyHandleInt, 0));
+		let mut output = Vec::new();
+		for collider in rigidBody.expect("").colliders()
+		{
+			output.push(collider.into_raw_parts().0)
+		}
+		output
+	}
+
 	fn OverlapCollider (&self, colliderHandleInt : u32, pos : Option<[f32; 2]>, rot : Option<f32>, collisionGroupFilter : Option<u32>) -> Vec<u32>
 	{
 		let collider = self.colliders.get(ColliderHandle::from_raw_parts(colliderHandleInt, 0));
@@ -498,7 +510,7 @@ impl Simulation
 			self.narrowPhase.query_dispatcher(),
 			&self.rigidBodies,
 			&self.colliders,
-			filter,
+			filter
 		);
 		let hitColliders = queryPipeline.intersect_shape(
 			orientation,
@@ -516,13 +528,75 @@ impl Simulation
 		output
 	}
 
-	fn GetRigidBodyColliders (&self, rigidBodyHandleInt : u32) -> Vec<u32>
+	fn CastCollider (&self, colliderHandleInt : u32, vel : [f32; 2], maxDur : f32, pos : Option<[f32; 2]>, rot : Option<f32>, collisionGroupFilter : Option<u32>) -> Vec<u32>
 	{
-		let rigidBody = self.rigidBodies.get(RigidBodyHandle::from_raw_parts(rigidBodyHandleInt, 0));
-		let mut output = Vec::new();
-		for collider in rigidBody.expect("").colliders()
+		let collider = self.colliders.get(ColliderHandle::from_raw_parts(colliderHandleInt, 0));
+		let _pos : [f32; 2];
+		if let Some(pos_) = pos
 		{
-			output.push(collider.into_raw_parts().0)
+			_pos = pos_;
+		}
+		else
+		{
+			let translation = collider.expect("").translation();
+			_pos = [translation.x, translation.y];
+		}
+		let _rot : f32;
+		if let Some(rot_) = rot
+		{
+			_rot = rot_;
+		}
+		else
+		{
+			_rot = collider.expect("").rotation().angle().to_degrees();
+		}
+		let _collisionGroupFilter : u32;
+		if let Some(collisionGroupFilter_) = collisionGroupFilter
+		{
+			_collisionGroupFilter = collisionGroupFilter_;
+		}
+		else
+		{
+			_collisionGroupFilter = Group::ALL.into();
+		}
+		let shape = match collider {
+			Some(collider) => collider.shape(),
+			None => return Vec::new(),
+		};
+		let orientation = Isometry2::new(vector![_pos[0], _pos[1]], _rot.to_radians());
+		let filter = QueryFilter {
+			groups: Some(InteractionGroups::new(
+				Group::ALL,
+				Group::from_bits_truncate(_collisionGroupFilter),
+			)),
+			..Default::default()
+		};
+		let queryPipeline = self.broadPhase.as_query_pipeline(
+			self.narrowPhase.query_dispatcher(),
+			&self.rigidBodies,
+			&self.colliders,
+			filter
+		);
+		let options = ShapeCastOptions {
+			max_time_of_impact: maxDur,
+			target_distance: 0.0,
+			stop_at_penetration: true,
+			compute_impact_geometry_on_penetration: true,
+		};
+		let hitColliders = queryPipeline.cast_shape(
+			&orientation,
+			&vector![vel[0], vel[1]],
+			shape,
+			options
+		);
+		let mut output = Vec::new();
+		for hitCollider in hitColliders
+		{
+			let hitColliderHandleInt = hitCollider.0.into_raw_parts().0;
+			if hitColliderHandleInt != colliderHandleInt
+			{
+				output.push(hitColliderHandleInt)
+			}
 		}
 		output
 	}

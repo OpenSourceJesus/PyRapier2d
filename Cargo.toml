@@ -10,3 +10,4 @@ crate-type = ["cdylib"]
 [dependencies]
 rapier2d = "0.30.0" 
 pyo3 = { version = "0.20.0", features = ["extension-module"] }
+parry2d = "0.25.0"
