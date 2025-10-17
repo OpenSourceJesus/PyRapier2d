@@ -598,10 +598,10 @@ impl Simulation
 			filter
 		);
 		let options = ShapeCastOptions {
-			max_time_of_impact: maxDur,
-			target_distance: 0.0,
-			stop_at_penetration: true,
-			compute_impact_geometry_on_penetration: true,
+			max_time_of_impact : maxDur,
+			target_distance : 0.0,
+			stop_at_penetration : true,
+			compute_impact_geometry_on_penetration : true
 		};
 		let hitColliders = queryPipeline.cast_shape(
 			&orientation,
@@ -617,6 +617,41 @@ impl Simulation
 			{
 				output.push(hitColliderHandleInt)
 			}
+		}
+		output
+	}
+
+	fn overlap_ray (&self, origin : [f32; 2], vel : [f32; 2], maxDur : f32, collisionGroupFilter : Option<u32>) -> Vec<(u32, f32, [f32; 2])>
+	{
+		let _collisionGroupFilter : u32;
+		if let Some(collisionGroupFilter_) = collisionGroupFilter
+		{
+			_collisionGroupFilter = collisionGroupFilter_;
+		}
+		else
+		{
+			_collisionGroupFilter = Group::ALL.into();
+		}
+		let filter = QueryFilter {
+			groups: Some(InteractionGroups::new(
+				Group::ALL,
+				Group::from_bits_truncate(_collisionGroupFilter),
+			)),
+			..Default::default()
+		};
+		let queryPipeline = self.broadPhase.as_query_pipeline(
+			self.narrowPhase.query_dispatcher(),
+			&self.rigidBodies,
+			&self.colliders,
+			filter
+		);
+		let ray = Ray::new(point![origin[0], origin[1]], vector![vel[0], vel[1]]);
+		let hitsInfos = queryPipeline.intersect_ray(ray, maxDur, true);
+		let mut output = Vec::new();
+		for hitInfo in hitsInfos
+		{
+			let _hitInfo = hitInfo.2;
+			output.push((hitInfo.0.into_raw_parts().0, _hitInfo.time_of_impact, [_hitInfo.normal[0], _hitInfo.normal[1]]));
 		}
 		output
 	}
