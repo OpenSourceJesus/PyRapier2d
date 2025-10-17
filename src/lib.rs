@@ -490,26 +490,28 @@ impl Simulation
 
 	fn overlap_collider (&self, colliderHandleInt : u32, pos : Option<[f32; 2]>, rot : Option<f32>, collisionGroupFilter : Option<u32>) -> Vec<u32>
 	{
-		let collider = self.colliders.get(ColliderHandle::from_raw_parts(colliderHandleInt, 0));
-		let _pos : [f32; 2];
-		if let Some(pos_) = pos
+		let collider = self.colliders.get(ColliderHandle::from_raw_parts(colliderHandleInt, 0)).expect("");
+		let mut worldOrientation = Isometry2::identity();
+		if pos.is_none() || rot.is_none()
 		{
-			_pos = pos_;
+			worldOrientation = if let Some(attachedToHandle) = collider.parent()
+			{
+				if let Some(attachedTo) = self.rigidBodies.get(attachedToHandle)
+				{
+					attachedTo.position() * collider.position_wrt_parent().unwrap_or(&Isometry2::identity())
+				}
+				else
+				{
+					*collider.position()
+				}
+			}
+			else
+			{
+				*collider.position()
+			};
 		}
-		else
-		{
-			let translation = collider.expect("").translation();
-			_pos = [translation.x, translation.y];
-		}
-		let _rot : f32;
-		if let Some(rot_) = rot
-		{
-			_rot = rot_;
-		}
-		else
-		{
-			_rot = collider.expect("").rotation().angle().to_degrees();
-		}
+		let _pos = pos.unwrap_or([worldOrientation.translation.x, worldOrientation.translation.y]);
+		let _rot = rot.unwrap_or(worldOrientation.rotation.angle().to_degrees());
 		let _collisionGroupFilter : u32;
 		if let Some(collisionGroupFilter_) = collisionGroupFilter
 		{
@@ -519,10 +521,6 @@ impl Simulation
 		{
 			_collisionGroupFilter = Group::ALL.into();
 		}
-		let shape = match collider {
-			Some(collider) => collider.shape(),
-			None => return Vec::new(),
-		};
 		let orientation = Isometry2::new(vector![_pos[0], _pos[1]], _rot.to_radians());
 		let filter = QueryFilter {
 			groups: Some(InteractionGroups::new(
@@ -539,7 +537,7 @@ impl Simulation
 		);
 		let hitColliders = queryPipeline.intersect_shape(
 			orientation,
-			shape,
+			collider.shape()
 		);
 		let mut output = Vec::new();
 		for hitCollider in hitColliders
@@ -555,26 +553,28 @@ impl Simulation
 
 	fn cast_collider (&self, colliderHandleInt : u32, dir : [f32; 2], pos : Option<[f32; 2]>, rot : Option<f32>, collisionGroupFilter : Option<u32>) -> Vec<u32>
 	{
-		let collider = self.colliders.get(ColliderHandle::from_raw_parts(colliderHandleInt, 0));
-		let _pos : [f32; 2];
-		if let Some(pos_) = pos
+		let collider = self.colliders.get(ColliderHandle::from_raw_parts(colliderHandleInt, 0)).expect("");
+		let mut worldOrientation = Isometry2::identity();
+		if pos.is_none() || rot.is_none()
 		{
-			_pos = pos_;
+			worldOrientation = if let Some(attachedToHandle) = collider.parent()
+			{
+				if let Some(attachedTo) = self.rigidBodies.get(attachedToHandle)
+				{
+					attachedTo.position() * collider.position_wrt_parent().unwrap_or(&Isometry2::identity())
+				}
+				else
+				{
+					*collider.position()
+				}
+			}
+			else
+			{
+				*collider.position()
+			};
 		}
-		else
-		{
-			let translation = collider.expect("").translation();
-			_pos = [translation.x, translation.y];
-		}
-		let _rot : f32;
-		if let Some(rot_) = rot
-		{
-			_rot = rot_;
-		}
-		else
-		{
-			_rot = collider.expect("").rotation().angle().to_degrees();
-		}
+		let _pos = pos.unwrap_or([worldOrientation.translation.x, worldOrientation.translation.y]);
+		let _rot = rot.unwrap_or(worldOrientation.rotation.angle().to_degrees());
 		let _collisionGroupFilter : u32;
 		if let Some(collisionGroupFilter_) = collisionGroupFilter
 		{
@@ -584,10 +584,6 @@ impl Simulation
 		{
 			_collisionGroupFilter = Group::ALL.into();
 		}
-		let shape = match collider {
-			Some(collider) => collider.shape(),
-			None => return Vec::new(),
-		};
 		let orientation = Isometry2::new(vector![_pos[0], _pos[1]], _rot.to_radians());
 		let filter = QueryFilter {
 			groups: Some(InteractionGroups::new(
@@ -611,7 +607,7 @@ impl Simulation
 		let hitColliders = queryPipeline.cast_shape(
 			&orientation,
 			&vector![dir[0], dir[1]],
-			shape,
+			collider.shape(),
 			options
 		);
 		let mut output = Vec::new();
