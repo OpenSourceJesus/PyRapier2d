@@ -49,6 +49,11 @@ impl Simulation
 			self.colliders.insert_with_parent(colliderBuilder, RigidBodyHandle::from_raw_parts(attachTo.expect(""), 0), &mut self.rigidBodies).into_raw_parts().0
 		}
 	}
+
+	fn GetMagnitudeReciprocal (&self, v : [f32; 2]) -> f32
+	{
+		1.0 / (v[0] * v[0] + v[1] * v[1])
+	}
 }
 
 #[pymethods]
@@ -548,7 +553,7 @@ impl Simulation
 		output
 	}
 
-	fn cast_collider (&self, colliderHandleInt : u32, vel : [f32; 2], maxDur : f32, pos : Option<[f32; 2]>, rot : Option<f32>, collisionGroupFilter : Option<u32>) -> Vec<u32>
+	fn cast_collider (&self, colliderHandleInt : u32, dir : [f32; 2], pos : Option<[f32; 2]>, rot : Option<f32>, collisionGroupFilter : Option<u32>) -> Vec<u32>
 	{
 		let collider = self.colliders.get(ColliderHandle::from_raw_parts(colliderHandleInt, 0));
 		let _pos : [f32; 2];
@@ -598,14 +603,14 @@ impl Simulation
 			filter
 		);
 		let options = ShapeCastOptions {
-			max_time_of_impact : maxDur,
+			max_time_of_impact : self.GetMagnitudeReciprocal(dir),
 			target_distance : 0.0,
 			stop_at_penetration : true,
 			compute_impact_geometry_on_penetration : true
 		};
 		let hitColliders = queryPipeline.cast_shape(
 			&orientation,
-			&vector![vel[0], vel[1]],
+			&vector![dir[0], dir[1]],
 			shape,
 			options
 		);
@@ -621,7 +626,7 @@ impl Simulation
 		output
 	}
 
-	fn overlap_ray (&self, origin : [f32; 2], vel : [f32; 2], maxDur : f32, collisionGroupFilter : Option<u32>) -> Vec<(u32, f32, [f32; 2])>
+	fn overlap_ray (&self, origin : [f32; 2], dir : [f32; 2], collisionGroupFilter : Option<u32>) -> Vec<(u32, f32, [f32; 2])>
 	{
 		let _collisionGroupFilter : u32;
 		if let Some(collisionGroupFilter_) = collisionGroupFilter
@@ -645,8 +650,8 @@ impl Simulation
 			&self.colliders,
 			filter
 		);
-		let ray = Ray::new(point![origin[0], origin[1]], vector![vel[0], vel[1]]);
-		let hitsInfos = queryPipeline.intersect_ray(ray, maxDur, true);
+		let ray = Ray::new(point![origin[0], origin[1]], vector![dir[0], dir[1]]);
+		let hitsInfos = queryPipeline.intersect_ray(ray, self.GetMagnitudeReciprocal(dir), true);
 		let mut output = Vec::new();
 		for hitInfo in hitsInfos
 		{
