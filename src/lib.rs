@@ -112,6 +112,26 @@ impl Simulation
 		[self.gravity.x, self.gravity.y]
 	}
 
+	fn SetColliderEnabled (&mut self, handleInt : u32, enabled : bool)
+	{
+		if let Some(collider) = self.GetCollider(handleInt)
+		{
+			collider.set_enabled(enabled);
+		}
+	}
+
+	fn GetColliderEnabled (&mut self, handleInt : u32) -> Option<bool>
+	{
+		if let Some(collider) = self.GetCollider(handleInt)
+		{
+			Some(collider.is_enabled())
+		}
+		else
+		{
+			None
+		}
+	}
+
 	fn SetRigidBodyPosition (&mut self, handleInt : u32, pos : [f32; 2], wakeUp : Option<bool>)
 	{
 		if let Some(rigidBody) = self.GetRigidBody(handleInt)
