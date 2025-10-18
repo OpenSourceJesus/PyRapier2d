@@ -255,6 +255,32 @@ impl Simulation
 		}
 	}
 
+	fn add_impulse (&mut self, handleInt : u32, impulse : [f32; 2], wakeUp : Option<bool>)
+	{
+		if let Some(rigidBody) = self.GetRigidBody(handleInt)
+		{
+			let mut _wakeUp = true;
+			if let Some(wakeUp_) = wakeUp
+			{
+				_wakeUp = wakeUp_;
+			}
+			rigidBody.apply_impulse(vector![impulse[0], impulse[1]], _wakeUp)
+		}
+	}
+
+	fn add_force (&mut self, handleInt : u32, force : [f32; 2], wakeUp : Option<bool>)
+	{
+		if let Some(rigidBody) = self.GetRigidBody(handleInt)
+		{
+			let mut _wakeUp = true;
+			if let Some(wakeUp_) = wakeUp
+			{
+				_wakeUp = wakeUp_;
+			}
+			rigidBody.add_force(vector![force[0], force[1]], _wakeUp)
+		}
+	}
+
 	fn add_rigid_body (&mut self, enabled : bool, _type : i8, pos : [f32; 2], rot : f32,  gravityScale : f32, dominance : i8, canRot : bool, linearDrag : f32, angDrag : f32, canSleep : bool, continuousCollideDetect : bool) -> u32
 	{
 		let mut rigidBodyBuilder = match _type
