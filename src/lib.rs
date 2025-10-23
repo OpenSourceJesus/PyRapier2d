@@ -141,12 +141,7 @@ impl Simulation
 	{
 		if let Some(rigidBody) = self.GetRigidBody(handleInt)
 		{
-			let mut _wakeUp = true;
-			if let Some(wakeUp_) = wakeUp
-			{
-				_wakeUp = wakeUp_;
-			}
-			rigidBody.set_position(vector![pos[0], pos[1]].into(), _wakeUp)
+			rigidBody.set_position(vector![pos[0], pos[1]].into(), wakeUp.unwrap_or(true))
 		}
 	}
 
@@ -188,12 +183,7 @@ impl Simulation
 	{
 		if let Some(rigidBody) = self.GetRigidBody(handleInt)
 		{
-			let mut _wakeUp = true;
-			if let Some(wakeUp_) = wakeUp
-			{
-				_wakeUp = wakeUp_;
-			}
-			rigidBody.set_rotation(Rotation2::new(rot.to_radians()).into(), _wakeUp)
+			rigidBody.set_rotation(Rotation2::new(rot.to_radians()).into(), wakeUp.unwrap_or(true))
 		}
 	}
 
@@ -233,12 +223,7 @@ impl Simulation
 	{
 		if let Some(rigidBody) = self.GetRigidBody(handleInt)
 		{
-			let mut _wakeUp = true;
-			if let Some(wakeUp_) = wakeUp
-			{
-				_wakeUp = wakeUp_;
-			}
-			rigidBody.set_linvel(vector![vel[0], vel[1]], _wakeUp)
+			rigidBody.set_linvel(vector![vel[0], vel[1]], wakeUp.unwrap_or(true))
 		}
 	}
 
@@ -259,12 +244,7 @@ impl Simulation
 	{
 		if let Some(rigidBody) = self.GetRigidBody(handleInt)
 		{
-			let mut _wakeUp = true;
-			if let Some(wakeUp_) = wakeUp
-			{
-				_wakeUp = wakeUp_;
-			}
-			rigidBody.apply_impulse(vector![impulse[0], impulse[1]], _wakeUp)
+			rigidBody.apply_impulse(vector![impulse[0], impulse[1]], wakeUp.unwrap_or(true))
 		}
 	}
 
@@ -272,12 +252,7 @@ impl Simulation
 	{
 		if let Some(rigidBody) = self.GetRigidBody(handleInt)
 		{
-			let mut _wakeUp = true;
-			if let Some(wakeUp_) = wakeUp
-			{
-				_wakeUp = wakeUp_;
-			}
-			rigidBody.add_force(vector![force[0], force[1]], _wakeUp)
+			rigidBody.add_force(vector![force[0], force[1]], wakeUp.unwrap_or(true))
 		}
 	}
 
@@ -296,6 +271,16 @@ impl Simulation
 			rigidBodyBuilder = rigidBodyBuilder.lock_rotations();
 		}
 		self.rigidBodies.insert(rigidBodyBuilder).into_raw_parts().0
+	}
+
+	fn remove_rigid_body (&mut self, handleInt : u32, removeColliders : bool)
+	{
+		self.rigidBodies.remove(RigidBodyHandle::from_raw_parts(handleInt, 0), &mut self.islandManager, &mut self.colliders, &mut self.impulseJoints, &mut self.multiBodyJoints, removeColliders);
+	}
+
+	fn remove_collider (&mut self, handleInt : u32, wakeUp : Option<bool>)
+	{
+		self.colliders.remove(ColliderHandle::from_raw_parts(handleInt, 0), &mut self.islandManager, &mut self.rigidBodies, wakeUp.unwrap_or(true));
 	}
 
 	fn add_ball_collider (&mut self, enabled : bool, pos : [f32; 2], rot : f32, collisionGroupMembership : u32, collisionGroupFilter : u32, radius : f32, isSensor : bool, density : f32, attachTo : Option<u32>) -> u32
@@ -390,57 +375,32 @@ impl Simulation
 
 	fn add_fixed_joint (&mut self, rigidBody1HandleInt : u32, rigidBody2HandleInt : u32, anchorPos1 : [f32; 2], anchorPos2 : [f32; 2], anchorRot1 : f32, anchorRot2 : f32, wakeUp : Option<bool>) -> u32
 	{
-		let mut _wakeUp = true;
-		if let Some(wakeUp_) = wakeUp
-		{
-			_wakeUp = wakeUp_;
-		}
 		let fixedJointBuilder = FixedJointBuilder::new().local_frame1(Isometry2::new(vector![anchorPos1[0], anchorPos1[1]], anchorRot1.to_radians())).local_frame2(Isometry2::new(vector![anchorPos2[0], anchorPos2[1]], anchorRot2.to_radians()));
-		self.impulseJoints.insert(RigidBodyHandle::from_raw_parts(rigidBody1HandleInt, 0), RigidBodyHandle::from_raw_parts(rigidBody2HandleInt, 0), fixedJointBuilder, _wakeUp).into_raw_parts().0
+		self.impulseJoints.insert(RigidBodyHandle::from_raw_parts(rigidBody1HandleInt, 0), RigidBodyHandle::from_raw_parts(rigidBody2HandleInt, 0), fixedJointBuilder, wakeUp.unwrap_or(true)).into_raw_parts().0
 	}
 
 	fn add_spring_joint (&mut self, rigidBody1HandleInt : u32, rigidBody2HandleInt : u32, anchorPos1 : [f32; 2], anchorPos2 : [f32; 2], restLen : f32, stiffness : f32, damping : f32, wakeUp : Option<bool>) -> u32
 	{
-		let mut _wakeUp = true;
-		if let Some(wakeUp_) = wakeUp
-		{
-			_wakeUp = wakeUp_;
-		}
 		let springJointBuilder = SpringJointBuilder::new(restLen, stiffness, damping).local_anchor1(point![anchorPos1[0], anchorPos1[1]]).local_anchor2(point![anchorPos2[0], anchorPos2[1]]);
-		self.impulseJoints.insert(RigidBodyHandle::from_raw_parts(rigidBody1HandleInt, 0), RigidBodyHandle::from_raw_parts(rigidBody2HandleInt, 0), springJointBuilder, _wakeUp).into_raw_parts().0
+		self.impulseJoints.insert(RigidBodyHandle::from_raw_parts(rigidBody1HandleInt, 0), RigidBodyHandle::from_raw_parts(rigidBody2HandleInt, 0), springJointBuilder, wakeUp.unwrap_or(true)).into_raw_parts().0
 	}
 
 	fn add_revolute_joint (&mut self, rigidBody1HandleInt : u32, rigidBody2HandleInt : u32, anchorPos1 : [f32; 2], anchorPos2 : [f32; 2], wakeUp : Option<bool>) -> u32
 	{
-		let mut _wakeUp = true;
-		if let Some(wakeUp_) = wakeUp
-		{
-			_wakeUp = wakeUp_;
-		}
 		let revoluteJointBuilder = RevoluteJointBuilder::new().local_anchor1(point![anchorPos1[0], anchorPos1[1]]).local_anchor2(point![anchorPos2[0], anchorPos2[1]]);
-		self.impulseJoints.insert(RigidBodyHandle::from_raw_parts(rigidBody1HandleInt, 0), RigidBodyHandle::from_raw_parts(rigidBody2HandleInt, 0), revoluteJointBuilder, _wakeUp).into_raw_parts().0
+		self.impulseJoints.insert(RigidBodyHandle::from_raw_parts(rigidBody1HandleInt, 0), RigidBodyHandle::from_raw_parts(rigidBody2HandleInt, 0), revoluteJointBuilder, wakeUp.unwrap_or(true)).into_raw_parts().0
 	}
 
 	fn add_prismatic_joint (&mut self, rigidBody1HandleInt : u32, rigidBody2HandleInt : u32, anchorPos1 : [f32; 2], anchorPos2 : [f32; 2], axis : [f32; 2], wakeUp : Option<bool>) -> u32
 	{
-		let mut _wakeUp = true;
-		if let Some(wakeUp_) = wakeUp
-		{
-			_wakeUp = wakeUp_;
-		}
 		let prismaticJointBuilder = PrismaticJointBuilder::new(Unit::new_normalize(vector![axis[0], axis[1]])).local_anchor1(point![anchorPos1[0], anchorPos1[1]]).local_anchor2(point![anchorPos2[0], anchorPos2[1]]);
-		self.impulseJoints.insert(RigidBodyHandle::from_raw_parts(rigidBody1HandleInt, 0), RigidBodyHandle::from_raw_parts(rigidBody2HandleInt, 0), prismaticJointBuilder, _wakeUp).into_raw_parts().0
+		self.impulseJoints.insert(RigidBodyHandle::from_raw_parts(rigidBody1HandleInt, 0), RigidBodyHandle::from_raw_parts(rigidBody2HandleInt, 0), prismaticJointBuilder, wakeUp.unwrap_or(true)).into_raw_parts().0
 	}
 
 	fn add_rope_joint (&mut self, rigidBody1HandleInt : u32, rigidBody2HandleInt : u32, anchorPos1 : [f32; 2], anchorPos2 : [f32; 2], len : f32, wakeUp : Option<bool>) -> u32
 	{
-		let mut _wakeUp = true;
-		if let Some(wakeUp_) = wakeUp
-		{
-			_wakeUp = wakeUp_;
-		}
 		let ropeJointBuilder = RopeJointBuilder::new(len).local_anchor1(point![anchorPos1[0], anchorPos1[1]]).local_anchor2(point![anchorPos2[0], anchorPos2[1]]);
-		self.impulseJoints.insert(RigidBodyHandle::from_raw_parts(rigidBody1HandleInt, 0), RigidBodyHandle::from_raw_parts(rigidBody2HandleInt, 0), ropeJointBuilder, _wakeUp).into_raw_parts().0
+		self.impulseJoints.insert(RigidBodyHandle::from_raw_parts(rigidBody1HandleInt, 0), RigidBodyHandle::from_raw_parts(rigidBody2HandleInt, 0), ropeJointBuilder, wakeUp.unwrap_or(true)).into_raw_parts().0
 	}
 
 	fn copy_rigid_body (&mut self, rigidBodyHandleInt: u32, pos: [f32; 2], rot: f32, wakeUp : Option<bool>) -> Option<u32>
@@ -453,18 +413,13 @@ impl Simulation
 				.filter_map(|handle| self.colliders.get(*handle).cloned())
 				.collect();
 			let mut newRigidBody = rigidBody.clone();
-			let mut _wakeUp = true;
-			if let Some(wakeUp_) = wakeUp
-			{
-				_wakeUp = wakeUp_;
-			}
-			newRigidBody.set_position(Isometry2::new(vector![pos[0], pos[1]], rot.to_radians()), _wakeUp);
-			let new_handle = self.rigidBodies.insert(newRigidBody);
+			newRigidBody.set_position(Isometry2::new(vector![pos[0], pos[1]], rot.to_radians()), wakeUp.unwrap_or(true));
+			let newHandle = self.rigidBodies.insert(newRigidBody);
 			for collider in copyColliders
 			{
-				self.colliders.insert_with_parent(collider, new_handle, &mut self.rigidBodies);
+				self.colliders.insert_with_parent(collider, newHandle, &mut self.rigidBodies);
 			}
-			Some(new_handle.into_raw_parts().0)
+			Some(newHandle.into_raw_parts().0)
 		}
 		else
 		{
@@ -505,11 +460,13 @@ impl Simulation
 
 	fn get_rigid_body_colliders (&self, rigidBodyHandleInt : u32) -> Vec<u32>
 	{
-		let rigidBody = self.rigidBodies.get(RigidBodyHandle::from_raw_parts(rigidBodyHandleInt, 0));
 		let mut output = Vec::new();
-		for collider in rigidBody.expect("").colliders()
+		if let Some(rigidBody) = self.rigidBodies.get(RigidBodyHandle::from_raw_parts(rigidBodyHandleInt, 0))
 		{
-			output.push(collider.into_raw_parts().0)
+			for collider in rigidBody.colliders()
+			{
+				output.push(collider.into_raw_parts().0)
+			}
 		}
 		output
 	}
